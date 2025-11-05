@@ -5,6 +5,7 @@ import com.uniflow.academic.period.application.ports.out.PeriodRepository;
 import com.uniflow.academic.period.application.ports.out.dto.PeriodFilter;
 import com.uniflow.academic.period.application.ports.out.dto.PaginationParams;
 import com.uniflow.academic.period.domain.Period;
+import com.uniflow.academic.subject.infrastructure.persistence.postgres.SubjectJpaRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,7 @@ public class PeriodPostgresAdapter implements PeriodRepository {
 
     private final PeriodJpaRepository jpaRepository;
     private final PeriodEntityMapper mapper;
+    private final SubjectJpaRepository subjectJpaRepository;
 
     @Override
     public Period save(Period period) {
@@ -132,9 +134,7 @@ public class PeriodPostgresAdapter implements PeriodRepository {
     @Override
     public boolean hasAssociatedSubjects(String periodId) {
         log.debug("Checking subjects for period: {}", periodId);
-        // TODO: Implement when Subject domain is created
-        // This will check if there are any subjects linked to this period
-        return false;
+        return subjectJpaRepository.countByPeriodId(periodId) > 0;
     }
 
     @Override
