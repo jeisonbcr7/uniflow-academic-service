@@ -27,6 +27,21 @@ public interface SubjectJpaRepository extends JpaRepository<SubjectEntity, Strin
             @Param("professor") String professor,
             @Param("credits") Integer credits,
             @Param("search") String search
+        SELECT s FROM SubjectEntity s
+        WHERE s.studentId = :studentId
+        AND (:periodId IS NULL OR s.periodId = :periodId)
+        AND (:professorPattern IS NULL OR LOWER(s.professor) LIKE :professorPattern)
+        AND (:credits IS NULL OR s.credits = :credits)
+        AND (:searchPattern IS NULL OR LOWER(s.name) LIKE :searchPattern
+             OR LOWER(s.code) LIKE :searchPattern)
+        ORDER BY s.createdAt DESC
+    """)
+    List<SubjectEntity> searchSubjects(
+            @Param("studentId") String studentId,
+            @Param("periodId") String periodId,
+            @Param("professorPattern") String professorPattern,
+            @Param("credits") Integer credits,
+            @Param("searchPattern") String searchPattern
     );
 
     List<SubjectEntity> findByStudentIdAndPeriodId(String studentId, String periodId);

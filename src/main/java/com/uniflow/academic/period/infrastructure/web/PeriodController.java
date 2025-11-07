@@ -5,6 +5,9 @@ import com.uniflow.academic.period.application.ports.out.dto.PeriodFilter;
 import com.uniflow.academic.period.application.ports.out.dto.PaginationParams;
 import com.uniflow.academic.period.infrastructure.web.dto.*;
 import com.uniflow.academic.period.infrastructure.web.dto.mapper.PeriodHttpMapper;
+import com.uniflow.academic.subject.application.ports.in.GetSubjectsByPeriodQuery;
+import com.uniflow.academic.subject.infrastructure.web.dto.SubjectsByPeriodHttpResponse;
+import com.uniflow.academic.subject.infrastructure.web.dto.mapper.SubjectHttpMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -41,7 +44,9 @@ public class PeriodController {
     private final GetPeriodByIdQuery getPeriodByIdQuery;
     private final GetCurrentPeriodQuery getCurrentPeriodQuery;
     private final GetPeriodStatisticsQuery getPeriodStatisticsQuery;
-    private final PeriodHttpMapper mapper;
+    private final PeriodHttpMapper periodHttpMapper;
+    private final GetSubjectsByPeriodQuery getSubjectsByPeriodQuery;
+    private final SubjectHttpMapper subjectHttpMapper;
 
     /**
      * POST /periods - Create a new period
@@ -68,10 +73,10 @@ public class PeriodController {
         String studentId = authentication.getName();
 
         CreatePeriodCommand.CreatePeriodRequest commandRequest =
-                mapper.toCreatePeriodCommandRequest(request);
+                periodHttpMapper.toCreatePeriodCommandRequest(request);
 
         var period = createPeriodCommand.execute(commandRequest, studentId);
-        PeriodHttpResponse response = mapper.toHttpResponse(period);
+        PeriodHttpResponse response = periodHttpMapper.toHttpResponse(period);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -125,7 +130,7 @@ public class PeriodController {
                 .build();
 
         var response = getAllPeriodsQuery.execute(studentId, params, filter);
-        return ResponseEntity.ok(mapper.toPaginationHttpResponse(response));
+        return ResponseEntity.ok(periodHttpMapper.toPaginationHttpResponse(response));
     }
 
     /**
@@ -152,7 +157,7 @@ public class PeriodController {
         String studentId = authentication.getName();
 
         var period = getCurrentPeriodQuery.execute(studentId);
-        return ResponseEntity.ok(mapper.toHttpResponse(period));
+        return ResponseEntity.ok(periodHttpMapper.toHttpResponse(period));
     }
 
     /**
@@ -182,7 +187,7 @@ public class PeriodController {
         String studentId = authentication.getName();
 
         var period = getPeriodByIdQuery.execute(periodId, studentId);
-        return ResponseEntity.ok(mapper.toHttpResponse(period));
+        return ResponseEntity.ok(periodHttpMapper.toHttpResponse(period));
     }
 
     /**
@@ -213,7 +218,7 @@ public class PeriodController {
         log.info("PUT /periods/{} - Update period", periodId);
         String studentId = authentication.getName();
 
-        var commandRequest = mapper.toUpdatePeriodCommandRequest(request);
+        var commandRequest = periodHttpMapper.toUpdatePeriodCommandRequest(request);
 
         var period = updatePeriodCommand.execute(
                 periodId,
@@ -221,7 +226,7 @@ public class PeriodController {
                 studentId
         );
 
-        return ResponseEntity.ok(mapper.toHttpResponse(period));
+        return ResponseEntity.ok(periodHttpMapper.toHttpResponse(period));
     }
 
     /**
@@ -281,7 +286,31 @@ public class PeriodController {
         String studentId = authentication.getName();
 
         var period = activatePeriodCommand.execute(periodId, studentId);
-        return ResponseEntity.ok(mapper.toHttpResponse(period));
+        return ResponseEntity.ok(periodHttpMapper.toHttpResponse(period));
+    }
+
+    /**
+     * GET /periods/{periodId}/subjects - Get period subjects
+     */
+    @GetMapping("/{periodId}/subjects")
+    @Operation(summary = "Get subjects by period")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Subjects retrieved successfully",
+                    content = @Content(schema = @Schema(implementation = SubjectsByPeriodHttpResponse.class))
+            ),
+            @ApiResponse(responseCode = "401", description = "Unauthorized"),
+            @ApiResponse(responseCode = "404", description = "Period not found")
+    })
+    public ResponseEntity<SubjectsByPeriodHttpResponse> getSubjectsByPeriod(
+            @PathVariable String periodId,
+            Authentication authentication
+    ) {
+        log.info("GET /periods/{}/subjects - list subjects", periodId);
+        String studentId = authentication.getName();
+        var subjects = getSubjectsByPeriodQuery.execute(periodId, studentId);
+        return ResponseEntity.ok(subjectHttpMapper.toSubjectsByPeriodResponse(subjects));
     }
 
     /**
@@ -309,6 +338,6 @@ public class PeriodController {
         String studentId = authentication.getName();
 
         var stats = getPeriodStatisticsQuery.execute(studentId);
-        return ResponseEntity.ok(mapper.toStatisticsHttpResponse(stats));
+        return ResponseEntity.ok(periodHttpMapper.toStatisticsHttpResponse(stats));
     }
 }
